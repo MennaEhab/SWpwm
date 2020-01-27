@@ -13,8 +13,8 @@ void timer0SwPWM_new(uint8_t u8_dutyCycle,Freq u8_frequency);
 int main(void)
 {
 	Led_Init(LED_0);
-	//timer0Init(T0_COMP_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_CMP);
-	timer0SwPWM_new(20, freq500) ;
+	//frequancies user can inter are 500 Hz 1kHz and 2kHz
+	timer0SwPWM(20, freq500) ;
 	
 
     /* Replace with your application code */

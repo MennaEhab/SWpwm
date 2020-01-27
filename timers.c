@@ -111,7 +111,7 @@ void timer0DelayMs2(uint16_t u16_delay_in_ms){
 
 
 
-void timer0SwPWM_new(uint8_t u8_dutyCycle,Freq u8_frequency){
+void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
 	
 	gpioPinDirection(T0_PWM_GPIO , T0_PWM_BIT , OUTPUT);
 	//timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
@@ -166,74 +166,12 @@ void timer0SwPWM_new(uint8_t u8_dutyCycle,Freq u8_frequency){
 	sei();
 	timer0Start();
 	gpioPinWrite(T0_PWM_GPIO , T0_PWM_BIT , HIGH);
-	/*
-	myduty_state = low ;
-	while (1){
-		if (TIFR &0x02)
-		{
-			timer0Stop();
-			
-			switch(myduty_state){
-				
-				case low :
-				//TCNT0 = 0;
-				OCR0 = duty_high ;
-				myduty_state = high;
-				//TCNT0 = 0;
-				gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
-				break;
-				case high :
-				//TCNT0 = 0;
-				OCR0 = duty_low ;
-				myduty_state = low;
-				//TCNT0 = 0;
-				gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
-				break;
-			}
-			timer0Start();
-			
-		}
-		
-	}*/
+	
 	
 	
 }
 
-void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
-	
-	
-	gpioPinDirection(T0_PWM_GPIO , T0_PWM_BIT , OUTPUT);
-	
-	
-	switch (u8_frequency){
-		
-		case freq1k :
-		
-		duty_high = (250 * (float)(u8_dutyCycle/100.0)) -2;
-		duty_low = 250 - duty_high -2 ;
-		
-		break;
-		
-		case freq2k:
-		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
-		duty_low = 125 - duty_high -1 ;
-		break;
-	}
-	duty_high =120;
-	duty_low = 100;
-	//duty_high = 125;
-	//duty_low =125;
-	
-	duty_high =175;
-	duty_low = 75;
-	
-	OCR0 = duty_low ;
-	//TCNT0=0;
-	sei();
-	timer0Start();
-	//gpioPinWrite(T0_PWM_GPIO , T0_PWM_BIT , HIGH);
-	myduty_state = low ;
-}
+
 
 		
 void timer0DelayUs(uint32_t u32_delay_in_us)
@@ -270,26 +208,7 @@ void timer0DelayUs(uint32_t u32_delay_in_us)
 		}
 
 ISR(TIMER0_COMP_vect){
-/*	timer0Stop();
-	
-	switch(myduty_state){
-		
-		case low :
-		//TCNT0 = 0;
-		OCR0 = duty_high ;
-		myduty_state = high;
-		//TCNT0 = 0;
-		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
-		break;
-		case high :
-		//TCNT0 = 0;
-		OCR0 = duty_low ;
-		myduty_state = low;
-		//TCNT0 = 0;
-		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
-		break;
-	}
-	timer0Start(); */
+
 
 gpioPinWrite( T0_PWM_GPIO , T0_PWM_BIT , HIGH);	
 }
