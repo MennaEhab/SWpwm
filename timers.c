@@ -8,7 +8,7 @@
 #include "timers.h"
 //#include <avr/interrupt.h>
 
-#include "interupt.h"
+#include "interrupt.h"
 #include "led.h"
 
 
@@ -17,13 +17,14 @@
 uint16_t  global_prescale ;
 uint16_t global_prescale1 ;
 uint16_t global_prescale2 ;
-volatile int32_t global_input_0 ;
+volatile uint32_t global_input_0 ;
 uint16_t prescalerValue =  1;
 
 volatile uint8_t duty_high ;
 volatile uint8_t duty_low ;
 volatile duty_state myduty_state ;
 volatile uint8_t global_T0frequency ;
+volatile uint8_t global_T2frequency ;
 
 
 
@@ -111,7 +112,7 @@ void timer0DelayMs2(uint16_t u16_delay_in_ms){
 
 
 
-void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
+void timer0SwPWM_new(uint8_t u8_dutyCycle,Freq u8_frequency){
 	
 	gpioPinDirection(T0_PWM_GPIO , T0_PWM_BIT , OUTPUT);
 	//timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
@@ -119,7 +120,7 @@ void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
 	switch (u8_frequency){
 		
 		case freq1k :
-		timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
+		timer0Init(T0_NORMAL_MODE, T0_OC0_DIS, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
 
 		duty_high = (250 * (float)(u8_dutyCycle/100.0)) ;
 		duty_low = 250 - duty_high ;
@@ -136,7 +137,7 @@ void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
 		case freq2k:
 		
 		
-		timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
+		timer0Init(T0_NORMAL_MODE, T0_OC0_DIS, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
 
 		//TCCR0 |= T0_pr
 		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
@@ -149,7 +150,7 @@ void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
 		}
 		break;
 		
-		case  freq500: timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_256 , 0 , 0, T0_INTERRUPT_ALL);
+		case  freq500: timer0Init(T0_NORMAL_MODE, T0_OC0_DIS, T0_PRESCALER_256 , 0 , 0, T0_INTERRUPT_ALL);
 
 		//TCCR0 |= T0_pr
 		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
@@ -167,11 +168,43 @@ void timer0SwPWM(uint8_t u8_dutyCycle,Freq u8_frequency){
 	timer0Start();
 	gpioPinWrite(T0_PWM_GPIO , T0_PWM_BIT , HIGH);
 	
-	
-	
 }
 
-
+void timer0SwPWM_old(uint8_t u8_dutyCycle,Freq u8_frequency){
+	
+	
+	gpioPinDirection(T0_PWM_GPIO , T0_PWM_BIT , OUTPUT);
+	
+	
+	switch (u8_frequency){
+		
+		case freq1k :
+		
+		duty_high = (250 * (float)(u8_dutyCycle/100.0)) -2;
+		duty_low = 250 - duty_high -2 ;
+		
+		break;
+		
+		case freq2k:
+		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
+		duty_low = 125 - duty_high -1 ;
+		break;
+	}
+	duty_high =120;
+	duty_low = 100;
+	//duty_high = 125;
+	//duty_low =125;
+	
+	duty_high =175;
+	duty_low = 75;
+	
+	OCR0 = duty_low ;
+	//TCNT0=0;
+	sei();
+	timer0Start();
+	//gpioPinWrite(T0_PWM_GPIO , T0_PWM_BIT , HIGH);
+	myduty_state = low ;
+}
 
 		
 void timer0DelayUs(uint32_t u32_delay_in_us)
@@ -208,7 +241,26 @@ void timer0DelayUs(uint32_t u32_delay_in_us)
 		}
 
 ISR(TIMER0_COMP_vect){
-
+/*	timer0Stop();
+	
+	switch(myduty_state){
+		
+		case low :
+		//TCNT0 = 0;
+		OCR0 = duty_high ;
+		myduty_state = high;
+		//TCNT0 = 0;
+		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
+		break;
+		case high :
+		//TCNT0 = 0;
+		OCR0 = duty_low ;
+		myduty_state = low;
+		//TCNT0 = 0;
+		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
+		break;
+	}
+	timer0Start(); */
 
 gpioPinWrite( T0_PWM_GPIO , T0_PWM_BIT , HIGH);	
 }
@@ -235,6 +287,7 @@ void timer1Init(En_timer1Mode_t en_mode,En_timer1OC_t en_OC,En_timer1perscaler_t
 					TCCR1 = 0 ;		
 					global_prescale1 = en_prescal ;
 					TCCR1 = en_mode | en_OC ;
+					ICR1= u16_inputCapture ;
 					timer1Set(u16_initialValue) ;
 					OCR1A = u16_outputCompareA ;
 					OCR1B = u16_outputCompareB ;
@@ -328,7 +381,7 @@ void timer2Stop(void){
 void timer2DelayMs(uint16_t u16_delay_in_ms){
 	
 	
-	timer2Init(T2_COMP_MODE,T2_OC2_CLEAR,T2_PRESCALER_64, 0 , 250, 0,T2_POLLING) ;
+	timer2Init(T2_COMP_MODE,T2_OC2_DIS,T2_PRESCALER_64, 0 , 250, 0,T2_POLLING) ;
 
 	TCNT2 = 12;
 	// no of ticks for one Milli-sec
@@ -346,3 +399,107 @@ void timer2DelayMs(uint16_t u16_delay_in_ms){
 	timer2Stop();
 }
 
+void timer2SwPWM(uint8_t u8_dutyCycle,uint8_t u8_frequency){
+	
+	
+	
+	gpioPinDirection(T2_PWM_GPIO1 , T2_PWM_BIT1 , OUTPUT);
+	gpioPinDirection(T2_PWM_GPIO2 , T2_PWM_BIT2 , OUTPUT);
+	
+	//timer0Init(T0_NORMAL_MODE, T0_OC0_CLEAR, T0_PRESCALER_64 , 0 , 0, T0_INTERRUPT_ALL);
+	global_T2frequency =u8_frequency ;
+	switch (u8_frequency){
+		
+		case freq1k :
+		timer2Init(T2_NORMAL_MODE, T2_OC2_DIS, T2_PRESCALER_64 , 0 , 0,0, T2_INTERRUPT_ALL);
+
+		duty_high = (250 * (float)(u8_dutyCycle/100.0)) ;
+		duty_low = 250 - duty_high ;
+		TCNT2=5;
+		OCR2 = duty_low + 5;
+		if (u8_dutyCycle == 100)
+		{
+			OCR2 = duty_low + 5+1;
+		}
+		//OCR0 = u8_dutyCycle ;
+		
+		break;
+		
+		case freq2k:
+		
+		
+		timer2Init(T2_NORMAL_MODE, T2_OC2_DIS, T2_PRESCALER_64 , 0 , 0,0, T2_INTERRUPT_ALL);
+
+		//TCCR0 |= T0_pr
+		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
+		duty_low = 125 - duty_high  ;
+		TCNT2=131;
+		OCR2 = duty_low + 131;
+		if (u8_dutyCycle == 100)
+		{
+			OCR2 = duty_low + 131+1;
+		}
+		break;
+		
+		case  freq500: timer2Init(T2_NORMAL_MODE, T2_OC2_DIS, T2_PRESCALER_256 , 0 , 0,0, T2_INTERRUPT_ALL);
+
+		//TCCR0 |= T0_pr
+		duty_high = (float)125 * (float)(u8_dutyCycle/100.0) ;
+		duty_low = 125 - duty_high  ;
+		TCNT2=131;
+		OCR2 = duty_low + 131;
+		if (u8_dutyCycle == 100)
+		{
+			OCR2 = duty_low + 131+1;
+		}
+	}
+	
+	
+	sei();
+	timer2Start();
+	gpioPinWrite(T2_PWM_GPIO1 , T2_PWM_BIT1 , HIGH);
+	gpioPinWrite(T2_PWM_GPIO2 , T2_PWM_BIT2 , HIGH);
+	
+}
+
+ISR(TIMER2_COMP_vect){
+/*	timer0Stop();
+	
+	switch(myduty_state){
+		
+		case low :
+		//TCNT0 = 0;
+		OCR0 = duty_high ;
+		myduty_state = high;
+		//TCNT0 = 0;
+		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
+		break;
+		case high :
+		//TCNT0 = 0;
+		OCR0 = duty_low ;
+		myduty_state = low;
+		//TCNT0 = 0;
+		gpioPinToggle( T0_PWM_GPIO , T0_PWM_BIT  );
+		break;
+	}
+	timer0Start(); */
+
+gpioPinWrite( T2_PWM_GPIO1 , T2_PWM_BIT1 ,HIGH);
+gpioPinWrite( T2_PWM_GPIO2 , T2_PWM_BIT2 ,HIGH);
+}
+
+ISR(TIMER2_OVF_vect){
+	gpioPinWrite( T2_PWM_GPIO1 , T2_PWM_BIT1 ,LOW);
+	gpioPinWrite( T2_PWM_GPIO2 , T2_PWM_BIT2 ,LOW);	
+	switch (global_T0frequency){
+		case freq1k : TCNT0 = 5 ;
+				break;
+		case freq2k : TCNT0 = 131 ;
+				break;
+		case  freq500 : TCNT0 = 131 ;
+				break;
+		
+	}
+	
+	
+}

@@ -11,6 +11,8 @@
 #include "registers.h"
 #include "gpio.h"
 
+#define F_CPU 16000000.0 
+
 /*
  * User Configuration Macros
  */
@@ -21,8 +23,11 @@
 #define T1_PWM_GPIO	GPIOD
 #define T1_PWM_BIT	BIT1
 
-#define T2_PWM_GPIO GPIOD
-#define T2_PWM_BIT	BIT2
+#define T2_PWM_GPIO1 GPIOD
+#define T2_PWM_BIT1	BIT4
+
+#define T2_PWM_GPIO2 GPIOD
+#define T2_PWM_BIT2	BIT5
 
 
 typedef enum En_timer0Mode_t{
@@ -55,16 +60,15 @@ typedef enum duty_state {
 	
 	
 	
-
-
-
 // for timer 1
 typedef enum En_timer1Mode_t{
-	T1_NORMAL_MODE=0x0000,T1_COMP_MODE_OCR1A_TOP=0x0008, T1_COMP_MODE_ICR1_TOP = 0x0018
+	T1_NORMAL_MODE=0x0000,T1_COMP_MODE_OCR1A_TOP=0x0008, 
+	T1_COMP_MODE_ICR1_TOP = 0x0018 , T1_PHASE_CORRECT_ICR1 = 0X0210
 
 }En_timer1Mode_t;
 typedef enum En_timer1OC_t{
-	T1_OC1_DIS=0,T1_OC1A_TOGGLE=0x4000,T1_OC1B_TOGGLE=0x1000,T1_OC1A_CLEAR=0x8000,T1_OC1B_CLEAR=0x2000,T1_OC1A_SET=0xC000,T1_OC1B_SET=0x3000
+	T1_OC1_DIS=0,T1_OC1A_TOGGLE=0x4000,T1_OC1B_TOGGLE=0x1000,T1_OC1A_CLEAR=0x8000,
+	T1_OC1B_CLEAR=0x2000,T1_OC1A_SET=0xC000,T1_OC1B_SET=0x3000 ,T1_OC1B_1A_CLEAR = 0xA000
 }En_timer1OC_t;
 
 typedef enum En_timer1perscaler_t{
@@ -74,7 +78,6 @@ typedef enum En_timer1perscaler_t{
 typedef enum En_timer1Interrupt_t{
 	T1_POLLING=0,T1_INTERRUPT_NORMAL=0x04,T0_INTERRUPT_CMP_1B=0x08, T1_INTERRUPT_CMP_1A=0x10, T1_INTERRUPT_ICAPTURE = 0x20
 }En_timer1Interrupt_t;
-
 
 
 
@@ -92,7 +95,7 @@ typedef enum En_timer2perscaler_t{
 }En_timer2perscaler_t;
 
 typedef enum En_timer2Interrupt_t{
-	T2_POLLING=0,T2_INTERRUPT_NORMAL=0x40,T2_INTERRUPT_CMP=0x80
+	T2_POLLING=0,T2_INTERRUPT_NORMAL=0x40,T2_INTERRUPT_CMP=0x80,T2_INTERRUPT_ALL = 0x40|0x80
 }En_timer2Interrupt_t;
 
 
